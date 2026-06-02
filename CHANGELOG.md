@@ -2,7 +2,7 @@
 
 All notable changes to `predxt` are documented here.
 
-## 0.1.0 - Unreleased
+## 0.1.0 - 2026-06-03
 
 - extracted websocket clients, parsers, auth helpers, connection managers, and
   tests from `prediction-platform`
