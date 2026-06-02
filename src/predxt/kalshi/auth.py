@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import base64
 import time
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 
 def build_kalshi_auth_headers(
@@ -52,14 +52,18 @@ def _sign_rsa_pss(
     try:
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import padding
+        from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
     except ImportError as exc:  # pragma: no cover - depends on runtime env
         raise RuntimeError(
             "cryptography package is required for Kalshi RSA-PSS signing"
         ) from exc
 
     pwd = passphrase.encode("utf-8") if passphrase else None
-    private_key = serialization.load_pem_private_key(
-        private_key_pem.encode("utf-8"), password=pwd
+    private_key = cast(
+        "RSAPrivateKey",
+        serialization.load_pem_private_key(
+            private_key_pem.encode("utf-8"), password=pwd
+        ),
     )
     signature = private_key.sign(
         message.encode("utf-8"),

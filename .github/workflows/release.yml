@@ -30,17 +30,28 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
+      - name: Type check
+        run: uv run mypy
+
       - name: Test
-        run: uv run pytest -q
+        run: uv run pytest -q -s
 
       - name: Build
         run: uv build
+
+      - name: Check distributions
+        run: uv run twine check dist/*
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           generate_release_notes: true
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,0 +1,7 @@
+interface:
+  display_name: "predxt"
+  short_description: "Build read-only prediction-market tools"
+  brand_color: "#1F7A8C"
+  default_prompt: "Use $predxt to build a read-only prediction-market orderbook monitor."
+policy:
+  allow_implicit_invocation: true

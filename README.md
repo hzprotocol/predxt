@@ -1,11 +1,16 @@
 # predxt
 
-Prediction market websocket clients for Polymarket, Kalshi, and Opinion.
+[![CI](https://github.com/hzprotocol/predxt/actions/workflows/ci.yml/badge.svg)](https://github.com/hzprotocol/predxt/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/predxt.svg)](https://pypi.org/project/predxt/)
+[![Python](https://img.shields.io/pypi/pyversions/predxt.svg)](https://pypi.org/project/predxt/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-`predxt` is a small Python library for venue websocket ingestion. It exposes
-venue-native clients, parsers, connection managers, auth helpers, and basic
-health metrics. It does not place trades, manage risk, run an arbitrage scanner,
-or provide an Arblense product API.
+Read-only realtime ingestion for prediction market builders.
+
+`predxt` streams and normalizes websocket data from Polymarket, Kalshi, and
+Opinion. It is built for dashboards, recorders, research tools, monitoring
+agents, and orderbook visualizations. It is not a trading, execution, account, or
+financial-advice library.
 
 ## Install
 
@@ -17,10 +22,18 @@ For local development:
 
 ```bash
 uv sync --group dev
-uv run pytest -q
+uv run pytest -q -s
 ```
 
-## Quickstart
+## 60-second Polymarket demo
+
+Polymarket market websockets are public. Use any valid Polymarket CLOB asset id:
+
+```bash
+predxt stream polymarket --asset-id 1234567890 --limit 5 --jsonl
+```
+
+Or from Python:
 
 ```python
 import asyncio
@@ -33,65 +46,107 @@ async def main() -> None:
     await client.connect()
     await client.subscribe(
         ["market"],
-        {
-            "assets_ids": ["1234567890"],
-            "initial_dump": True,
-        },
+        {"assets_ids": ["1234567890"], "initial_dump": True},
     )
 
     async for message in client.messages():
-        print(message.venue, message.raw_data)
+        print(message.event_type, message.asset_id, message.raw_data)
+        break
+
+    await client.close()
 
 
 asyncio.run(main())
 ```
 
-## Supported venues
+## Venue matrix
 
-- Polymarket market websocket with `assets_ids`, `initial_dump`, and
-  `custom_feature_enabled` subscription parameters.
-- Kalshi websocket with precomputed auth headers or RSA-PSS signing from
-  `key_id` and `private_key_pem`.
-- Opinion websocket with API key auth and `market_ids` subscriptions.
+| Venue | Public stream | Auth | Current support |
+| --- | --- | --- | --- |
+| Polymarket | Yes | None for market stream | market books, price changes, trades |
+| Kalshi | No | signed websocket headers | orderbook snapshots and deltas |
+| Opinion | No | API key | depth diffs, last price, last trade |
 
-## Public API
+## API contract
 
-Core exports:
+Core imports:
 
 ```python
-from predxt import BaseWsClient, ExponentialBackoff, HealthMetrics, VenueMessage
+from predxt import (
+    OrderBookState,
+    VenueMessage,
+    typed_event_from_message,
+)
 ```
 
-Venue exports:
+Venue imports:
 
 ```python
-from predxt.polymarket import PolymarketWsClient, SubscriptionConfig
+from predxt.polymarket import PolymarketWsClient, PolymarketSubscriptionConfig
 from predxt.kalshi import KalshiWsClient, build_kalshi_auth_headers
 from predxt.opinion import OpinionWsClient, OpinionSubscriptionConfig
 ```
 
-`VenueMessage.raw_data` contains normalized venue websocket payloads. The shape
-is stable enough for ingestion and tests, but it is not an order execution or
-trading schema.
+Every client emits `VenueMessage` objects with:
+
+- `venue`
+- `event_type`
+- `market_id`
+- `asset_id`
+- `timestamp_ms`
+- `received_at_ms`
+- `raw_data`
+
+Use `typed_event_from_message(message)` when you want dataclass events such as
+`OrderBookSnapshot`, `OrderBookDelta`, `TradeEvent`, or `PriceChangeEvent`.
+Use `OrderBookState` when you need a small in-memory orderbook helper.
+
+## CLI
+
+Offline parser demo:
+
+```bash
+predxt parse-fixture --venue polymarket --jsonl tests/fixtures/polymarket_order_books.json
+```
+
+Live streams:
+
+```bash
+predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl
+KALSHI_KEY_ID=... KALSHI_PRIVATE_KEY_PATH=... predxt stream kalshi --market MARKET-TICKER
+OPINION_API_KEY=... predxt stream opinion --market-id 2764
+```
 
 ## Examples
 
-The `examples/` directory contains runnable scripts for each venue. Examples use
-environment variables for credentials and do not include secrets.
+This repository keeps minimal examples in `examples/`. Public showcase starters:
 
-```bash
-python examples/polymarket_market_stream.py --asset-id 1234567890
-KALSHI_KEY_ID=... KALSHI_PRIVATE_KEY_PATH=... python examples/kalshi_market_stream.py --market TICKER
-OPINION_API_KEY=... python examples/opinion_market_stream.py --market-id 2764
-```
+- `hzprotocol/predxt-orderbook-tui` - terminal orderbook monitor
+- `hzprotocol/predxt-web-dashboard` - FastAPI + React dashboard
+- `hzprotocol/predxt-agent-market-monitor` - read-only agent/MCP starter
+
+## What this is not
+
+`predxt` does not place orders, derive trading credentials, manage positions,
+execute arbitrage, bypass venue restrictions, or provide financial advice. It is
+a read-only ingestion SDK. Keep account secrets in environment variables or a
+secret manager; never hard-code them in examples or agent prompts.
+
+## Documentation
+
+- Docs site: <https://hzprotocol.github.io/predxt>
+- AI context: [`llms.txt`](llms.txt), [`llms-full.txt`](llms-full.txt)
+- Codex skill: [`skills/predxt/SKILL.md`](skills/predxt/SKILL.md)
 
 ## Development
 
 ```bash
 uv sync --group dev
 uv run ruff check .
-uv run pytest -q
+uv run mypy
+uv run pytest -q -s
 uv build
+uv run twine check dist/*
 ```
 
 ## Release

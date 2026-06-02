@@ -23,13 +23,13 @@
    git push origin v0.1.0
    ```
 
-6. The release workflow builds distributions, creates a GitHub release, and
-   publishes to PyPI when Trusted Publishing is configured.
+6. The release workflow builds distributions, creates a GitHub release, publishes
+   to TestPyPI, then publishes to PyPI when Trusted Publishing is configured.
 
 ## PyPI
 
-Use PyPI Trusted Publishing for GitHub Actions. Configure the PyPI project
-`predxt` to trust this repository and the `release.yml` workflow.
+Use PyPI Trusted Publishing for GitHub Actions. Configure the TestPyPI and PyPI
+projects named `predxt` to trust this repository and the `release.yml` workflow.
 
 If Trusted Publishing is not configured for the first release, build artifacts
 locally and publish manually from a controlled maintainer environment.

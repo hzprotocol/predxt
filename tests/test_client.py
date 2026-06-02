@@ -92,6 +92,10 @@ async def test_handle_raw_message_expands_price_change_batches():
 
     assert len(messages) == 2
     assert [vm.raw_data["asset_id"] for vm in messages] == ["asset-1", "asset-2"]
+    assert messages[0].venue == "polymarket"
+    assert messages[0].event_type == "price_change"
+    assert messages[0].asset_id == "asset-1"
+    assert messages[0].received_at_ms == messages[0].timestamp_ms
     assert client.health().messages_received == 2
 
 

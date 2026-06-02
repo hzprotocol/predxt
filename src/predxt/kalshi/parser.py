@@ -13,7 +13,8 @@ def parse_message(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if msg_type not in {"orderbook_snapshot", "orderbook_delta", "ticker", "trade"}:
         return None
 
-    payload = data.get("msg") if isinstance(data.get("msg"), dict) else data
+    msg = data.get("msg")
+    payload: Dict[str, Any] = msg if isinstance(msg, dict) else data
     market_ticker = payload.get("market_ticker") or data.get("market_ticker")
     timestamp = (
         payload.get("timestamp")

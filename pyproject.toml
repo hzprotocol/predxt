@@ -29,7 +29,11 @@ dependencies = [
   "websockets>=10.0",
 ]
 
+[project.scripts]
+predxt = "predxt.cli:main"
+
 [project.urls]
+Documentation = "https://hzprotocol.github.io/predxt"
 Homepage = "https://github.com/hzprotocol/predxt"
 Repository = "https://github.com/hzprotocol/predxt"
 Issues = "https://github.com/hzprotocol/predxt/issues"
@@ -37,9 +41,13 @@ Issues = "https://github.com/hzprotocol/predxt/issues"
 [dependency-groups]
 dev = [
   "build>=1.2.2",
+  "mypy>=1.19.0",
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.7.0",
   "pytest>=9.0.2",
   "pytest-asyncio>=1.3.0",
   "ruff>=0.14.14",
+  "twine>=6.2.0",
 ]
 
 [build-system]
@@ -49,6 +57,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+predxt = ["py.typed"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
@@ -56,3 +67,12 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+packages = ["predxt"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true

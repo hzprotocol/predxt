@@ -9,7 +9,12 @@ from urllib.parse import urlencode
 
 import websockets
 
-from predxt.base import BaseWsClient, HealthMetrics, VenueMessage
+from predxt.base import (
+    BaseWsClient,
+    HealthMetrics,
+    VenueMessage,
+    build_venue_message,
+)
 from predxt.opinion.parser import parse_message
 from predxt.utils.backoff import ExponentialBackoff
 
@@ -31,7 +36,7 @@ class OpinionWsClient(BaseWsClient):
         self._api_key = api_key
         self._heartbeat_seconds = heartbeat_seconds
         self._max_reconnect_attempts = max_reconnect_attempts
-        self._ws: Optional[websockets.WebSocketClientProtocol] = None
+        self._ws: Any | None = None
         self._connected = False
         self._connect_time: Optional[float] = None
         self._channels: list[str] = []
@@ -106,7 +111,9 @@ class OpinionWsClient(BaseWsClient):
                     if self._channels:
                         await self.subscribe(self._channels, self._params)
 
-                async for raw_msg in self._ws:  # type: ignore[misc]
+                if self._ws is None:
+                    continue
+                async for raw_msg in self._ws:
                     async for vm in self._handle_raw_message(
                         raw_msg,
                         seen_hashes=seen_hashes,
@@ -156,10 +163,11 @@ class OpinionWsClient(BaseWsClient):
                             continue
                         seen_hashes.add(dedupe_hash)
 
-                    vm = VenueMessage()
-                    vm.venue = "opinion"
-                    vm.raw_data = parsed
-                    vm.timestamp_ms = time.time() * 1000
+                    vm = build_venue_message(
+                        venue="opinion",
+                        raw_data=parsed,
+                        timestamp_ms=time.time() * 1000,
+                    )
                     self._health.messages_received += 1
                     self._health.last_message_timestamp_ms = vm.timestamp_ms
                     yield vm

@@ -1,0 +1,25 @@
+site_name: predxt
+site_description: Read-only realtime ingestion SDK for prediction markets.
+site_url: https://hzprotocol.github.io/predxt
+repo_url: https://github.com/hzprotocol/predxt
+repo_name: hzprotocol/predxt
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.instant
+    - content.code.copy
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+nav:
+  - Home: index.md
+  - Concepts: concepts.md
+  - Venues: venues.md
+  - Events: events.md
+  - Orderbooks: orderbook.md
+  - CLI: cli.md
+  - Reconnects: reconnects.md
+  - Security: security.md
+  - Release: releasing.md
+  - FAQ: faq.md

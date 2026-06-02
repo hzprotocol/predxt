@@ -55,4 +55,6 @@ async def test_opinion_handle_raw_message_parses_depth_diff():
 
     assert len(messages) == 1
     assert messages[0].venue == "opinion"
+    assert messages[0].event_type == "depth_diff"
     assert messages[0].raw_data["market_id"] == "2764"
+    assert messages[0].market_id == "2764"

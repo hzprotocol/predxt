@@ -8,7 +8,12 @@ from typing import Any, AsyncIterator, Iterable, Optional
 
 import websockets
 
-from predxt.base import BaseWsClient, HealthMetrics, VenueMessage
+from predxt.base import (
+    BaseWsClient,
+    HealthMetrics,
+    VenueMessage,
+    build_venue_message,
+)
 from predxt.utils.backoff import ExponentialBackoff
 
 from .parser import parse_message
@@ -21,7 +26,7 @@ class PolymarketWsClient(BaseWsClient):
     MAX_RECONNECT_ATTEMPTS = 10
 
     def __init__(self, max_reconnect_attempts: int = MAX_RECONNECT_ATTEMPTS):
-        self._ws: Optional[websockets.WebSocketClientProtocol] = None
+        self._ws: Any | None = None
         self._connected = False
         self._backoff = ExponentialBackoff(base_seconds=1, max_seconds=60)
         self._health = HealthMetrics(connected=False)
@@ -137,7 +142,10 @@ class PolymarketWsClient(BaseWsClient):
                 # Prefer iterating directly over the websocket object when possible.
                 try:
                     # Prefer standard async iteration
-                    async for raw_msg in self._ws:
+                    ws = self._ws
+                    if ws is None:
+                        continue
+                    async for raw_msg in ws:
                         async for vm in self._handle_raw_message(
                             raw_msg, seen_hashes=seen_hashes
                         ):
@@ -146,7 +154,10 @@ class PolymarketWsClient(BaseWsClient):
                     # The websocket mock may expose __aiter__ as an async generator object
                     # that isn't directly iterable; attempt to call it and iterate the result.
                     try:
-                        aiter_obj = self._ws.__aiter__()
+                        ws = self._ws
+                        if ws is None:
+                            continue
+                        aiter_obj = ws.__aiter__()
                         # If __aiter__() returned a coroutine that yields an async generator, await it
                         if asyncio.iscoroutine(aiter_obj):
                             aiter_obj = await aiter_obj
@@ -159,14 +170,6 @@ class PolymarketWsClient(BaseWsClient):
                     except Exception as e:
                         logger.error(f"Failed iterating websocket mock: {e}")
                     # end of mock iterator handling
-                except TypeError:
-                    # Some test mocks provide __aiter__ as an async generator; support that case
-                    if hasattr(self._ws, "__aiter__"):
-                        async for raw_msg in self._ws.__aiter__():
-                            async for vm in self._handle_raw_message(
-                                raw_msg, seen_hashes=seen_hashes
-                            ):
-                                yield vm
 
             except (websockets.exceptions.ConnectionClosed, OSError) as e:
                 self._connected = False
@@ -214,10 +217,11 @@ class PolymarketWsClient(BaseWsClient):
                             continue
                         seen_hashes.add(h)
 
-                    vm = VenueMessage()
-                    vm.venue = "polymarket"
-                    vm.raw_data = parsed
-                    vm.timestamp_ms = time.time() * 1000
+                    vm = build_venue_message(
+                        venue="polymarket",
+                        raw_data=parsed,
+                        timestamp_ms=time.time() * 1000,
+                    )
 
                     self._health.messages_received += 1
                     self._health.last_message_timestamp_ms = vm.timestamp_ms

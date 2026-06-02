@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -16,7 +19,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -27,11 +30,31 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
+      - name: Type check
+        run: uv run mypy
+
       - name: Test
-        run: uv run pytest -q
+        run: uv run pytest -q -s
 
       - name: Build
         run: uv build
+
+      - name: Check distributions
+        run: |
+          uv run twine check dist/*
+          tar -tzf dist/predxt-*.tar.gz | grep 'tests/fixtures/polymarket_order_books.json'
+
+      - name: Docs build
+        run: uv run mkdocs build --strict
+
+      - name: Example help smoke
+        run: |
+          uv run predxt --help
+          uv run predxt parse-fixture --help
+          uv run predxt stream polymarket --help
+          uv run python examples/polymarket_market_stream.py --help
+          uv run python examples/kalshi_market_stream.py --help
+          uv run python examples/opinion_market_stream.py --help
 
       - name: Wheel install smoke
         run: |

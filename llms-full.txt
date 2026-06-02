@@ -1,0 +1,77 @@
+# predxt full agent context
+
+`predxt` is a Python-first read-only realtime ingestion SDK for prediction
+market websocket data from Polymarket, Kalshi, and Opinion.
+
+## Package contract
+
+- Distribution: `predxt`
+- Import package: `predxt`
+- Python: 3.12+
+- Runtime deps: `websockets`, `pydantic`, `cryptography`
+- No order placement or account management APIs exist.
+
+## Recommended patterns
+
+### Public Polymarket stream
+
+```python
+from predxt.polymarket import PolymarketWsClient
+
+client = PolymarketWsClient()
+await client.connect()
+await client.subscribe(["market"], {"assets_ids": ["..."], "initial_dump": True})
+async for message in client.messages():
+    ...
+```
+
+### Typed events
+
+```python
+from predxt import typed_event_from_message
+
+event = typed_event_from_message(message)
+if event is not None:
+    print(event.event_type, event.raw_data)
+```
+
+### Orderbook helper
+
+```python
+from predxt import OrderBookState
+
+state = OrderBookState()
+state.apply(message)
+print(state.best_bid, state.best_ask)
+```
+
+### CLI
+
+```bash
+predxt parse-fixture --venue polymarket --jsonl tests/fixtures/polymarket_order_books.json
+predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl
+```
+
+## Venue auth
+
+- Polymarket market stream: public asset-id subscription.
+- Kalshi: set `KALSHI_KEY_ID` plus either `KALSHI_SIGNATURE`/`KALSHI_TIMESTAMP`
+  or `KALSHI_PRIVATE_KEY_PATH`.
+- Opinion: set `OPINION_API_KEY`.
+
+## Anti-hallucination rules
+
+- Do not invent `place_order`, `buy`, `sell`, `trade`, account, or wallet APIs.
+- Do not hard-code secrets in examples.
+- Do not imply financial advice or profitable trading.
+- Do not treat `OrderBookState` as execution-grade matching infrastructure.
+
+## Useful docs
+
+- `README.md`
+- `docs/index.md`
+- `docs/events.md`
+- `docs/orderbook.md`
+- `docs/cli.md`
+- `docs/security.md`
+- `skills/predxt/SKILL.md`

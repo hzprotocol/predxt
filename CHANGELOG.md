@@ -7,4 +7,6 @@ All notable changes to `predxt` are documented here.
 - extracted websocket clients, parsers, auth helpers, connection managers, and
   tests from `prediction-platform`
 - added Polymarket, Kalshi, and Opinion websocket client support
-- added package metadata, examples, CI, and release workflow scaffolding
+- added typed `VenueMessage`, typed event dataclasses, `OrderBookState`, and CLI
+- added package metadata, examples, CI, docs, agent docs, and release workflow
+  scaffolding

@@ -1,0 +1,56 @@
+# predxt
+
+Read-only Python SDK for prediction-market websocket ingestion.
+
+## Use predxt for
+
+- live market-data recorders
+- orderbook dashboards
+- monitoring agents
+- research tools
+- read-only scanners
+
+## Do not use predxt for
+
+- placing orders
+- account management
+- trading advice
+- credential generation
+- bypassing venue restrictions
+
+## Install
+
+```bash
+pip install predxt
+```
+
+## Core APIs
+
+```python
+from predxt import OrderBookState, VenueMessage, typed_event_from_message
+from predxt.polymarket import PolymarketWsClient
+from predxt.kalshi import KalshiWsClient
+from predxt.opinion import OpinionWsClient
+```
+
+`VenueMessage` fields: `venue`, `raw_data`, `timestamp_ms`, `event_type`,
+`market_id`, `asset_id`, `received_at_ms`.
+
+Typed event classes: `OrderBookSnapshot`, `OrderBookDelta`, `TradeEvent`,
+`PriceChangeEvent`.
+
+## CLI
+
+```bash
+predxt parse-fixture --venue polymarket --jsonl tests/fixtures/polymarket_order_books.json
+predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl
+```
+
+## Agent guidance
+
+- Preserve raw payload access.
+- Keep generated apps read-only.
+- Use env vars for Kalshi and Opinion credentials.
+- Prefer `OrderBookState` for simple dashboards; do not claim execution-grade semantics.
+
+More context: `llms-full.txt`, `docs/`, `skills/predxt/SKILL.md`.

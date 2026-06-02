@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest a read-only ingestion feature.
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: What read-only instrument or workflow should this enable?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed behavior
+      description: Describe the API, CLI, parser, docs, or example change.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Boundary check
+      options:
+        - label: This does not require order placement or account management.
+          required: true
+        - label: This does not require hard-coded secrets.
+          required: true

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <rect width="1280" height="640" fill="#081b24"/>
+  <rect x="72" y="72" width="1136" height="496" rx="32" fill="#0f2f3a" stroke="#38bdf8" stroke-width="4"/>
+  <text x="120" y="230" fill="#e6f7ff" font-family="Inter, Arial, sans-serif" font-size="104" font-weight="700">predxt</text>
+  <text x="124" y="310" fill="#94e2ff" font-family="Inter, Arial, sans-serif" font-size="42">read-only prediction market realtime ingestion</text>
+  <text x="124" y="410" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="34">Polymarket · Kalshi · Opinion</text>
+  <path d="M122 482 H470" stroke="#38bdf8" stroke-width="8" stroke-linecap="round"/>
+  <path d="M122 520 H338" stroke="#2dd4bf" stroke-width="8" stroke-linecap="round"/>
+</svg>
