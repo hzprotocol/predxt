@@ -121,9 +121,12 @@ OPINION_API_KEY=... predxt stream opinion --market-id 2764
 
 This repository keeps minimal examples in `examples/`. Public showcase starters:
 
-- `hzprotocol/predxt-orderbook-tui` - terminal orderbook monitor
-- `hzprotocol/predxt-web-dashboard` - FastAPI + React dashboard
-- `hzprotocol/predxt-agent-market-monitor` - read-only agent/MCP starter
+- [`hzprotocol/predxt-orderbook-tui`](https://github.com/hzprotocol/predxt-orderbook-tui)
+  - terminal orderbook monitor
+- [`hzprotocol/predxt-web-dashboard`](https://github.com/hzprotocol/predxt-web-dashboard)
+  - FastAPI + React dashboard
+- [`hzprotocol/predxt-agent-market-monitor`](https://github.com/hzprotocol/predxt-agent-market-monitor)
+  - read-only agent/MCP starter
 
 ## What this is not
 

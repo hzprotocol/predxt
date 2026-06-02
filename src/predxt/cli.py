@@ -162,9 +162,20 @@ def _emit_message(message: VenueMessage, *, jsonl: bool) -> None:
         "typed_event": _dataclass_to_dict(typed_event_from_message(message)),
     }
     if jsonl:
-        print(json.dumps(payload, sort_keys=True))
+        _safe_print(json.dumps(payload, sort_keys=True))
     else:
-        print(json.dumps(payload, indent=2, sort_keys=True))
+        _safe_print(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def _safe_print(text: str) -> None:
+    try:
+        print(text)
+    except BrokenPipeError:
+        try:
+            sys.stdout.close()
+        except OSError:
+            pass
+        raise SystemExit(0) from None
 
 
 def _message_to_dict(message: VenueMessage) -> dict[str, Any]:

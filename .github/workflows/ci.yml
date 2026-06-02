@@ -43,6 +43,7 @@ jobs:
         run: |
           uv run twine check dist/*
           tar -tzf dist/predxt-*.tar.gz | grep 'tests/fixtures/polymarket_order_books.json'
+          tar -tzf dist/predxt-*.tar.gz | grep 'evals/agent_prompts/polymarket_orderbook_recorder.md'
 
       - name: Docs build
         run: uv run mkdocs build --strict
