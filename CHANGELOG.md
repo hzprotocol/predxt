@@ -11,3 +11,5 @@ All notable changes to `predxt` are documented here.
 - made CLI output safe for common pipe consumers such as `head`
 - added package metadata, examples, CI, docs, agent docs, and release workflow
   scaffolding
+- switched the release workflow to direct PyPI Trusted Publishing gated by the
+  `pypi` GitHub environment

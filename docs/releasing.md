@@ -11,25 +11,37 @@
    ```bash
    uv sync --group dev
    uv run ruff check .
-   uv run pytest -q
+   uv run mypy
+   uv run pytest -q -s
    uv build
+   uv run twine check dist/*
    ```
 
 4. Push `main`.
-5. Create and push a tag:
+5. Confirm PyPI Trusted Publishing is configured:
+
+   - PyPI project name: `predxt`
+   - Owner: `hzprotocol`
+   - Repository: `predxt`
+   - Workflow: `release.yml`
+   - Environment: `pypi`
+
+6. Create and push a tag:
 
    ```bash
    git tag v0.1.0
    git push origin v0.1.0
    ```
 
-6. The release workflow builds distributions, creates a GitHub release, publishes
-   to TestPyPI, then publishes to PyPI when Trusted Publishing is configured.
+7. The release workflow builds distributions first. The publish job waits for
+   the GitHub `pypi` environment approval, then creates the GitHub release and
+   publishes to PyPI with Trusted Publishing.
 
 ## PyPI
 
-Use PyPI Trusted Publishing for GitHub Actions. Configure the TestPyPI and PyPI
-projects named `predxt` to trust this repository and the `release.yml` workflow.
+Use PyPI Trusted Publishing for GitHub Actions. Configure the PyPI project named
+`predxt` to trust this repository and the `release.yml` workflow with the
+`pypi` environment.
 
 If Trusted Publishing is not configured for the first release, build artifacts
 locally and publish manually from a controlled maintainer environment.
