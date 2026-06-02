@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest -q
+
+      - name: Build
+        run: uv build
+
+      - name: Wheel install smoke
+        run: |
+          python -m venv /tmp/predxt-smoke
+          /tmp/predxt-smoke/bin/python -m pip install --upgrade pip
+          /tmp/predxt-smoke/bin/python -m pip install dist/*.whl
+          /tmp/predxt-smoke/bin/python - <<'PY'
+          import predxt
+          import predxt.kalshi
+          import predxt.opinion
+          import predxt.polymarket
+
+          assert predxt.__version__ == "0.1.0"
+          PY
