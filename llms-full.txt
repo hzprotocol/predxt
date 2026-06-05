@@ -1,14 +1,14 @@
 # predxt full agent context
 
-`predxt` is a Python-first read-only realtime ingestion SDK for prediction
-market websocket data from Polymarket, Kalshi, and Opinion.
+`predxt` is a Python-first read-only market-data SDK for prediction market
+websocket streams and REST snapshots from Polymarket, Kalshi, and Opinion.
 
 ## Package contract
 
 - Distribution: `predxt`
 - Import package: `predxt`
 - Python: 3.12+
-- Runtime deps: `websockets`, `pydantic`, `cryptography`
+- Runtime deps: `websockets`, `httpx`, `pydantic`, `cryptography`
 - No order placement or account management APIs exist.
 
 ## Recommended patterns
@@ -45,6 +45,21 @@ state.apply(message)
 print(state.best_bid, state.best_ask)
 ```
 
+### REST market data
+
+```python
+from predxt.polymarket import PolymarketRestClient
+
+client = PolymarketRestClient()
+markets = await client.search_markets("weather", limit=5)
+book = await client.get_orderbook("CLOB_TOKEN_ID")
+await client.close()
+```
+
+Shared REST classes include `MarketSummary`, `MarketDetail`,
+`OrderBookSnapshot`, `OrderBookLevel`, `VenueCredentialStatus`, and
+`VenueApiError`.
+
 ### CLI
 
 ```bash
@@ -72,6 +87,7 @@ predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl
 - `docs/index.md`
 - `docs/events.md`
 - `docs/orderbook.md`
+- `docs/venues.md`
 - `docs/cli.md`
 - `docs/security.md`
 - `skills/predxt/SKILL.md`

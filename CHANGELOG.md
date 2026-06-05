@@ -2,6 +2,17 @@
 
 All notable changes to `predxt` are documented here.
 
+## 0.2.0 - 2026-06-05
+
+- added read-only REST client base, normalized market/orderbook models, and
+  sanitized venue API errors
+- added Polymarket, Kalshi, and Opinion REST clients for market search, market
+  detail, orderbook snapshots, and API health checks
+- kept order placement, balances, positions, and account management out of the
+  SDK contract
+- documented REST usage and updated agent context for the expanded read-only
+  market-data surface
+
 ## 0.1.0 - 2026-06-03
 
 - extracted websocket clients, parsers, auth helpers, connection managers, and

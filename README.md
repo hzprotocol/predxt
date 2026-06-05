@@ -5,12 +5,12 @@
 [![Python](https://img.shields.io/pypi/pyversions/predxt.svg)](https://pypi.org/project/predxt/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Read-only realtime ingestion for prediction market builders.
+Read-only market-data ingestion for prediction market builders.
 
-`predxt` streams and normalizes websocket data from Polymarket, Kalshi, and
-Opinion. It is built for dashboards, recorders, research tools, monitoring
-agents, and orderbook visualizations. It is not a trading, execution, account, or
-financial-advice library.
+`predxt` streams websocket data and reads REST market-data snapshots from
+Polymarket, Kalshi, and Opinion. It is built for dashboards, recorders, research
+tools, monitoring agents, market scanners, and orderbook visualizations. It is
+not a trading, execution, account, or financial-advice library.
 
 ## Install
 
@@ -61,11 +61,11 @@ asyncio.run(main())
 
 ## Venue matrix
 
-| Venue | Public stream | Auth | Current support |
-| --- | --- | --- | --- |
-| Polymarket | Yes | None for market stream | market books, price changes, trades |
-| Kalshi | No | signed websocket headers | orderbook snapshots and deltas |
-| Opinion | No | API key | depth diffs, last price, last trade |
+| Venue | Public stream | REST market data | Auth | Current support |
+| --- | --- | --- | --- | --- |
+| Polymarket | Yes | Yes | None for public market data | books, price changes, trades, market search/detail, orderbook snapshots |
+| Kalshi | No | Yes | signed headers for authenticated paths | orderbook snapshots/deltas, market search/detail, orderbook snapshots |
+| Opinion | No | Yes | API key | depth diffs, last price/trade, market list/detail, orderbook snapshots |
 
 ## API contract
 
@@ -82,9 +82,21 @@ from predxt import (
 Venue imports:
 
 ```python
-from predxt.polymarket import PolymarketWsClient, PolymarketSubscriptionConfig
-from predxt.kalshi import KalshiWsClient, build_kalshi_auth_headers
-from predxt.opinion import OpinionWsClient, OpinionSubscriptionConfig
+from predxt.polymarket import (
+    PolymarketRestClient,
+    PolymarketSubscriptionConfig,
+    PolymarketWsClient,
+)
+from predxt.kalshi import (
+    KalshiRestClient,
+    KalshiWsClient,
+    build_kalshi_auth_headers,
+)
+from predxt.opinion import (
+    OpinionRestClient,
+    OpinionSubscriptionConfig,
+    OpinionWsClient,
+)
 ```
 
 Every client emits `VenueMessage` objects with:
@@ -100,6 +112,17 @@ Every client emits `VenueMessage` objects with:
 Use `typed_event_from_message(message)` when you want dataclass events such as
 `OrderBookSnapshot`, `OrderBookDelta`, `TradeEvent`, or `PriceChangeEvent`.
 Use `OrderBookState` when you need a small in-memory orderbook helper.
+
+REST clients expose read-only market-data methods:
+
+```python
+from predxt.polymarket import PolymarketRestClient
+
+client = PolymarketRestClient()
+markets = await client.search_markets("weather", limit=5)
+book = await client.get_orderbook("CLOB_TOKEN_ID")
+await client.close()
+```
 
 ## CLI
 
@@ -131,8 +154,8 @@ This repository keeps minimal examples in `examples/`. Public showcase starters:
 ## What this is not
 
 `predxt` does not place orders, derive trading credentials, manage positions,
-execute arbitrage, bypass venue restrictions, or provide financial advice. It is
-a read-only ingestion SDK. Keep account secrets in environment variables or a
+execute strategies, bypass venue restrictions, or provide financial advice. It
+is a read-only market-data SDK. Keep credentials in environment variables or a
 secret manager; never hard-code them in examples or agent prompts.
 
 ## Documentation

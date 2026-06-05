@@ -1,6 +1,7 @@
 # predxt
 
-Read-only Python SDK for prediction-market websocket ingestion.
+Read-only Python SDK for prediction-market websocket ingestion and REST
+market-data snapshots.
 
 ## Use predxt for
 
@@ -28,9 +29,9 @@ pip install predxt
 
 ```python
 from predxt import OrderBookState, VenueMessage, typed_event_from_message
-from predxt.polymarket import PolymarketWsClient
-from predxt.kalshi import KalshiWsClient
-from predxt.opinion import OpinionWsClient
+from predxt.polymarket import PolymarketRestClient, PolymarketWsClient
+from predxt.kalshi import KalshiRestClient, KalshiWsClient
+from predxt.opinion import OpinionRestClient, OpinionWsClient
 ```
 
 `VenueMessage` fields: `venue`, `raw_data`, `timestamp_ms`, `event_type`,
@@ -38,6 +39,12 @@ from predxt.opinion import OpinionWsClient
 
 Typed event classes: `OrderBookSnapshot`, `OrderBookDelta`, `TradeEvent`,
 `PriceChangeEvent`.
+
+REST model classes: `MarketSummary`, `MarketDetail`, `OrderBookLevel`,
+`VenueCredentialStatus`, `VenueApiError`.
+
+REST clients expose `search_markets`, `get_market`, `get_orderbook`, and
+`healthcheck`/`test_credentials`.
 
 ## CLI
 
@@ -50,7 +57,7 @@ predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl
 
 - Preserve raw payload access.
 - Keep generated apps read-only.
-- Use env vars for Kalshi and Opinion credentials.
+- Use env vars or secret managers for Kalshi and Opinion credentials.
 - Prefer `OrderBookState` for simple dashboards; do not claim execution-grade semantics.
 
 More context: `llms-full.txt`, `docs/`, `skills/predxt/SKILL.md`.

@@ -1,7 +1,7 @@
 [project]
 name = "predxt"
-version = "0.1.0"
-description = "Prediction market websocket clients for Polymarket, Kalshi, and Opinion"
+version = "0.2.0"
+description = "Read-only prediction market data clients for Polymarket, Kalshi, and Opinion"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -10,6 +10,9 @@ authors = [
 ]
 keywords = [
   "prediction-markets",
+  "market-data",
+  "orderbook",
+  "rest",
   "websocket",
   "polymarket",
   "kalshi",
@@ -25,6 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "cryptography>=42.0.0",
+  "httpx>=0.28.0",
   "pydantic>=2.0",
   "websockets>=10.0",
 ]

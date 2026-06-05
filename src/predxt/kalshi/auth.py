@@ -9,12 +9,16 @@ def build_kalshi_auth_headers(
     auth_params: dict[str, Any],
     *,
     ws_path: str = "/trade-api/ws/v2",
+    method: str = "GET",
 ) -> dict[str, str]:
-    """Build Kalshi websocket auth headers.
+    """Build Kalshi signed request auth headers.
 
     Supported modes:
     - precomputed signature via key_id + signature + timestamp
     - RSA-PSS signing via key_id + private_key_pem (+ optional passphrase/timestamp)
+
+    ``ws_path`` is retained for backwards compatibility; pass any request path
+    that Kalshi expects in the signature payload.
     """
     key_id = auth_params.get("key_id")
     signature = auth_params.get("signature")
@@ -32,7 +36,7 @@ def build_kalshi_auth_headers(
         return {}
 
     ts = str(timestamp or int(time.time() * 1000))
-    msg = f"{ts}GET{ws_path}"
+    msg = f"{ts}{method.upper()}{ws_path}"
     signed = _sign_rsa_pss(
         message=msg,
         private_key_pem=str(private_key_pem),

@@ -1,29 +1,31 @@
 ---
 name: predxt
-description: Build read-only prediction-market instruments with the predxt Python SDK. Use when creating live market-data recorders, orderbook dashboards, monitoring agents, CLI/TUI tools, or demos for Polymarket, Kalshi, or Opinion websocket ingestion. Do not use for order placement, trading execution, account management, credential generation, or financial advice.
+description: Build read-only prediction-market instruments with the predxt Python SDK. Use when creating live market-data recorders, orderbook dashboards, monitoring agents, CLI/TUI tools, demos, or read-only REST market-data integrations for Polymarket, Kalshi, or Opinion. Do not use for order placement, trading execution, account management, credential generation, or financial advice.
 ---
 
 # predxt
 
-Use `predxt` for read-only realtime prediction-market data ingestion.
+Use `predxt` for read-only prediction-market data ingestion.
 
 ## Workflow
 
 1. Confirm the user wants a read-only instrument.
 2. Pick the venue: Polymarket, Kalshi, or Opinion.
-3. Use `VenueMessage` for raw-compatible ingestion.
-4. Use `typed_event_from_message` for supported typed events.
-5. Use `OrderBookState` only for lightweight dashboards and demos.
-6. Store credentials in environment variables when Kalshi or Opinion auth is required.
-7. Validate generated code with offline parser fixtures when possible.
+3. Use websocket clients for live streams.
+4. Use REST clients for market discovery, detail, orderbook snapshots, and health checks.
+5. Use `VenueMessage` for raw-compatible websocket ingestion.
+6. Use `typed_event_from_message` for supported typed events.
+7. Use `OrderBookState` only for lightweight dashboards and demos.
+8. Store credentials in environment variables when Kalshi or Opinion auth is required.
+9. Validate generated code with offline parser fixtures or mocked REST responses.
 
 ## Core Imports
 
 ```python
 from predxt import OrderBookState, typed_event_from_message
-from predxt.polymarket import PolymarketWsClient
-from predxt.kalshi import KalshiWsClient
-from predxt.opinion import OpinionWsClient
+from predxt.polymarket import PolymarketRestClient, PolymarketWsClient
+from predxt.kalshi import KalshiRestClient, KalshiWsClient
+from predxt.opinion import OpinionRestClient, OpinionWsClient
 ```
 
 ## Do Not Invent
