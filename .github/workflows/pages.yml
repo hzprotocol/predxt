@@ -49,3 +49,18 @@ jobs:
       - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify deployed site
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --silent --show-error --location \
+            --retry 6 \
+            --retry-delay 10 \
+            --retry-all-errors \
+            --retry-max-time 180 \
+            --connect-timeout 10 \
+            --max-time 30 \
+            "${SITE_URL}" \
+            --output /tmp/predxt-pages.html
+          grep -Fq '<title>predxt</title>' /tmp/predxt-pages.html

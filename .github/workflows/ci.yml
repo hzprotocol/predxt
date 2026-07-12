@@ -63,10 +63,18 @@ jobs:
           /tmp/predxt-smoke/bin/python -m pip install --upgrade pip
           /tmp/predxt-smoke/bin/python -m pip install dist/*.whl
           /tmp/predxt-smoke/bin/python - <<'PY'
+          from importlib.metadata import version
+          from pathlib import Path
+          import tomllib
+
           import predxt
           import predxt.kalshi
           import predxt.opinion
           import predxt.polymarket
 
-          assert predxt.__version__ == "0.1.0"
+          with Path("pyproject.toml").open("rb") as pyproject_file:
+              project_version = tomllib.load(pyproject_file)["project"]["version"]
+
+          assert version("predxt") == project_version
+          assert predxt.__version__ == project_version
           PY
