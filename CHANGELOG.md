@@ -2,7 +2,7 @@
 
 All notable changes to `predxt` are documented here.
 
-## Unreleased
+## 0.2.1 - 2026-08-26
 
 - fixed Polymarket, Kalshi, and Opinion connection manager shutdown so idle
   websocket streams cannot block `stop()`

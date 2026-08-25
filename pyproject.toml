@@ -1,6 +1,6 @@
 [project]
 name = "predxt"
-version = "0.2.0"
+version = "0.2.1"
 description = "Read-only prediction market data clients for Polymarket, Kalshi, and Opinion"
 readme = "README.md"
 requires-python = ">=3.12"
