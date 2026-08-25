@@ -62,6 +62,8 @@ class KalshiWsConnectionManager:
         self._market_callbacks: Dict[str, List[MessageCallback]] = defaultdict(list)
         self._messages_task: Optional[asyncio.Task] = None
         self._stop_event = asyncio.Event()
+        self._dispatch_complete = asyncio.Event()
+        self._dispatch_complete.set()
         self._lock = asyncio.Lock()
 
     def add_market(self, market_ticker: str) -> None:
@@ -92,8 +94,15 @@ class KalshiWsConnectionManager:
 
     async def stop(self) -> None:
         self._stop_event.set()
-        if self._messages_task:
-            await asyncio.gather(self._messages_task, return_exceptions=True)
+        messages_task = self._messages_task
+        if messages_task and not self._dispatch_complete.is_set():
+            await self._dispatch_complete.wait()
+        if messages_task and not messages_task.done():
+            messages_task.cancel()
+        if messages_task:
+            await asyncio.gather(messages_task, return_exceptions=True)
+        if self._messages_task is messages_task:
+            self._messages_task = None
         await self._client.close()
 
     async def refresh_subscription(self) -> None:
@@ -109,7 +118,11 @@ class KalshiWsConnectionManager:
     async def _message_loop(self) -> None:
         try:
             async for msg in self._client.messages():
-                await self._dispatch(msg)
+                self._dispatch_complete.clear()
+                try:
+                    await self._dispatch(msg)
+                finally:
+                    self._dispatch_complete.set()
                 if self._stop_event.is_set():
                     break
         except asyncio.CancelledError:

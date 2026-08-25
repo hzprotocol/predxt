@@ -2,6 +2,13 @@
 
 All notable changes to `predxt` are documented here.
 
+## Unreleased
+
+- fixed Polymarket, Kalshi, and Opinion connection manager shutdown so idle
+  websocket streams cannot block `stop()`
+- made pre-start and repeated `stop()` calls safe without requiring consumers
+  to cancel private message tasks
+
 ## 0.2.0 - 2026-06-05
 
 - added read-only REST client base, normalized market/orderbook models, and
