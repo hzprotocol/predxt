@@ -124,6 +124,11 @@ book = await client.get_orderbook("CLOB_TOKEN_ID")
 await client.close()
 ```
 
+Connection managers own their background websocket reader. Use their public
+`start()` and `stop()` methods for lifecycle management; `stop()` also handles
+idle streams and is safe to call before `start()` or more than once. Consumers
+do not need to access private task attributes.
+
 ## CLI
 
 Offline parser demo:

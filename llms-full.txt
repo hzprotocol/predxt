@@ -60,6 +60,13 @@ Shared REST classes include `MarketSummary`, `MarketDetail`,
 `OrderBookSnapshot`, `OrderBookLevel`, `VenueCredentialStatus`, and
 `VenueApiError`.
 
+### Connection manager lifecycle
+
+Polymarket, Kalshi, and Opinion connection managers own their background
+message reader. Use the public `start()` and `stop()` methods. `stop()` handles
+idle streams and is safe before `start()` or when called repeatedly; consumers
+must not inspect or cancel private message task attributes.
+
 ### CLI
 
 ```bash
