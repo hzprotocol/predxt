@@ -15,6 +15,21 @@ Connection retry behavior uses exponential backoff with jitter. Live systems
 should monitor `last_message_timestamp_ms`, reconnect counts, and process-level
 logs.
 
+## Graceful stream endings
+
+Polymarket, Kalshi, and Opinion recover when the remote websocket iterator
+ends normally as well as when it raises a connection error. Each disconnect
+sets `connected` to false, increments `reconnect_count` once, and waits for
+backoff before reconnecting and restoring the saved subscription. Opinion
+stops its old heartbeat before waiting and starts a new one after connecting.
+A completed socket is never repeatedly read without a retry delay.
+
+`close()` marks the client stopped before closing the socket and interrupts
+pending retry waits. Cancelling the message reader or calling `aclose()` on
+its iterator releases the connection and heartbeat without reconnecting.
+Repeated `close()` calls are safe, including before the first connection.
+After closing, call `connect()` explicitly to start a new session.
+
 ## Connection manager shutdown
 
 Polymarket, Kalshi, and Opinion connection managers own their background

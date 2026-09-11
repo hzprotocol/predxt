@@ -18,7 +18,7 @@ from predxt.base import (
 )
 from predxt.kalshi.auth import build_kalshi_auth_headers
 from predxt.kalshi.parser import parse_message
-from predxt.utils.backoff import ExponentialBackoff
+from predxt.utils.backoff import ExponentialBackoff, _wait_for_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,7 @@ class KalshiWsClient(BaseWsClient):
         self._ws_url = ws_url
         self._ws: Any | None = None
         self._connected = False
+        self._closed = asyncio.Event()
         self._connect_time: Optional[float] = None
         self._channels: list[str] = []
         self._params: dict[str, Any] = {}
@@ -44,17 +45,22 @@ class KalshiWsClient(BaseWsClient):
         self._max_reconnect_attempts = max_reconnect_attempts
 
     async def connect(self, auth_params: Optional[dict[str, Any]] = None) -> None:
+        self._closed.clear()
         if auth_params is not None:
             self._auth_params = auth_params
         ws_path = urlparse(self._ws_url).path or "/trade-api/ws/v2"
         headers = self._build_auth_headers(self._auth_params, ws_path=ws_path)
         attempts = 0
 
-        while attempts < self._max_reconnect_attempts:
+        while not self._closed.is_set() and attempts < self._max_reconnect_attempts:
             try:
-                self._ws = await websockets.connect(
+                ws = await websockets.connect(
                     self._ws_url, additional_headers=headers
                 )
+                if self._closed.is_set():
+                    await ws.close()
+                    return
+                self._ws = ws
                 self._connected = True
                 self._connect_time = time.time()
                 self._backoff.reset()
@@ -66,8 +72,10 @@ class KalshiWsClient(BaseWsClient):
                 attempts += 1
                 self._health.last_error = str(exc)
                 self._health.last_error_timestamp_ms = time.time() * 1000
-                await asyncio.sleep(self._backoff.next_delay())
+                await _wait_for_backoff(self._backoff, self._closed)
 
+        if self._closed.is_set():
+            return
         raise ConnectionError(
             f"Failed to connect to Kalshi after {self._max_reconnect_attempts} attempts"
         )
@@ -104,60 +112,73 @@ class KalshiWsClient(BaseWsClient):
         self._health.messages_sent += 1
 
     async def close(self) -> None:
-        if self._ws:
-            await self._ws.close()
+        self._closed.set()
         self._connected = False
         self._health.connected = False
+        ws, self._ws = self._ws, None
+        if ws is not None:
+            await ws.close()
 
     async def messages(self) -> AsyncIterator[VenueMessage]:
         seen_hashes: set[str] = set()
 
-        while True:
-            try:
-                if not self._connected:
-                    await self.connect(self._auth_params)
-                    if self._channels:
-                        await self.subscribe(self._channels, self._params)
+        try:
+            while not self._closed.is_set():
+                try:
+                    if not self._connected:
+                        await self.connect(self._auth_params)
+                        if self._closed.is_set():
+                            return
+                        if self._channels:
+                            await self.subscribe(self._channels, self._params)
 
-                if self._ws is None:
-                    continue
-                async for raw_msg in self._ws:
-                    payload = json.loads(raw_msg)
-                    parsed = parse_message(payload)
-                    if not parsed:
-                        continue
+                    if self._closed.is_set():
+                        return
+                    if self._ws is None:
+                        raise OSError("Websocket unavailable")
+                    async for raw_msg in self._ws:
+                        payload = json.loads(raw_msg)
+                        parsed = parse_message(payload)
+                        if not parsed:
+                            continue
 
-                    dedupe_hash = parsed.get("hash")
-                    if not dedupe_hash:
-                        dedupe_hash = hashlib.sha1(
-                            json.dumps(parsed, sort_keys=True).encode("utf-8")
-                        ).hexdigest()
+                        dedupe_hash = parsed.get("hash")
+                        if not dedupe_hash:
+                            dedupe_hash = hashlib.sha1(
+                                json.dumps(parsed, sort_keys=True).encode("utf-8")
+                            ).hexdigest()
 
-                    if dedupe_hash in seen_hashes:
-                        continue
-                    seen_hashes.add(dedupe_hash)
+                        if dedupe_hash in seen_hashes:
+                            continue
+                        seen_hashes.add(dedupe_hash)
 
-                    vm = build_venue_message(
-                        venue="kalshi",
-                        raw_data=parsed,
-                        timestamp_ms=time.time() * 1000,
-                    )
+                        vm = build_venue_message(
+                            venue="kalshi",
+                            raw_data=parsed,
+                            timestamp_ms=time.time() * 1000,
+                        )
 
-                    self._health.messages_received += 1
-                    self._health.last_message_timestamp_ms = vm.timestamp_ms
-                    yield vm
+                        self._health.messages_received += 1
+                        self._health.last_message_timestamp_ms = vm.timestamp_ms
+                        yield vm
 
-            except (websockets.exceptions.ConnectionClosed, OSError):
+                except (websockets.exceptions.ConnectionClosed, OSError):
+                    pass
+                except Exception:
+                    logger.exception("Unexpected Kalshi websocket error")
+                    raise
+
+                # Both graceful EOF and transport errors require a paced reconnect.
+                if self._closed.is_set():
+                    return
                 self._connected = False
                 self._health.connected = False
                 self._health.reconnect_count += 1
-                await asyncio.sleep(self._backoff.next_delay())
-            except Exception:
-                logger.exception("Unexpected Kalshi websocket error")
-                raise
-
-            if len(seen_hashes) > 10000:
-                seen_hashes.clear()
+                await _wait_for_backoff(self._backoff, self._closed)
+                if len(seen_hashes) > 10000:
+                    seen_hashes.clear()
+        finally:
+            await self.close()
 
     def health(self) -> HealthMetrics:
         self._health.connected = self._connected

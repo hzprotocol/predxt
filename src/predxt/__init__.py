@@ -1,4 +1,4 @@
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 from .base import BaseWsClient, HealthMetrics, VenueMessage, build_venue_message
 from .events import (

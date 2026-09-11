@@ -1,3 +1,4 @@
+import asyncio
 import random
 
 
@@ -15,3 +16,18 @@ class ExponentialBackoff:
 
     def reset(self) -> None:
         self._attempt = 0
+
+
+async def _wait_for_backoff(
+    backoff: ExponentialBackoff,
+    closed: asyncio.Event,
+    *,
+    delay: float | None = None,
+) -> None:
+    """Pace retries while allowing an explicit close to interrupt the wait."""
+    if delay is None:
+        delay = backoff.next_delay()
+    try:
+        await asyncio.wait_for(closed.wait(), timeout=delay)
+    except TimeoutError:
+        pass
