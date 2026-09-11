@@ -16,7 +16,7 @@ from predxt.base import (
     build_venue_message,
 )
 from predxt.opinion.parser import parse_message
-from predxt.utils.backoff import ExponentialBackoff
+from predxt.utils.backoff import ExponentialBackoff, _wait_for_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class OpinionWsClient(BaseWsClient):
         self._max_reconnect_attempts = max_reconnect_attempts
         self._ws: Any | None = None
         self._connected = False
+        self._closed = asyncio.Event()
         self._connect_time: Optional[float] = None
         self._channels: list[str] = []
         self._params: dict[str, Any] = {}
@@ -47,6 +48,7 @@ class OpinionWsClient(BaseWsClient):
         self._heartbeat_task: asyncio.Task | None = None
 
     async def connect(self, auth_params: Optional[dict[str, Any]] = None) -> None:
+        self._closed.clear()
         if auth_params is not None:
             self._auth_params = auth_params
         api_key = self._resolve_api_key()
@@ -54,9 +56,13 @@ class OpinionWsClient(BaseWsClient):
             raise ValueError("Opinion websocket requires an API key")
 
         attempts = 0
-        while attempts < self._max_reconnect_attempts:
+        while not self._closed.is_set() and attempts < self._max_reconnect_attempts:
             try:
-                self._ws = await websockets.connect(self._authenticated_url(api_key))
+                ws = await websockets.connect(self._authenticated_url(api_key))
+                if self._closed.is_set():
+                    await ws.close()
+                    return
+                self._ws = ws
                 self._connected = True
                 self._connect_time = time.time()
                 self._backoff.reset()
@@ -69,8 +75,10 @@ class OpinionWsClient(BaseWsClient):
                 attempts += 1
                 self._health.last_error = str(exc)
                 self._health.last_error_timestamp_ms = time.time() * 1000
-                await asyncio.sleep(self._backoff.next_delay())
+                await _wait_for_backoff(self._backoff, self._closed)
 
+        if self._closed.is_set():
+            return
         raise ConnectionError(
             f"Failed to connect to Opinion after {self._max_reconnect_attempts} attempts"
         )
@@ -96,41 +104,54 @@ class OpinionWsClient(BaseWsClient):
             self._health.messages_sent += 1
 
     async def close(self) -> None:
-        await self._stop_heartbeat()
-        if self._ws:
-            await self._ws.close()
+        self._closed.set()
         self._connected = False
         self._health.connected = False
+        ws, self._ws = self._ws, None
+        await self._stop_heartbeat()
+        if ws is not None:
+            await ws.close()
 
     async def messages(self) -> AsyncIterator[VenueMessage]:
         seen_hashes: set[str] = set()
-        while True:
-            try:
-                if not self._connected:
-                    await self.connect(self._auth_params)
-                    if self._channels:
-                        await self.subscribe(self._channels, self._params)
+        try:
+            while not self._closed.is_set():
+                try:
+                    if not self._connected:
+                        await self.connect(self._auth_params)
+                        if self._closed.is_set():
+                            return
+                        if self._channels:
+                            await self.subscribe(self._channels, self._params)
 
-                if self._ws is None:
-                    continue
-                async for raw_msg in self._ws:
-                    async for vm in self._handle_raw_message(
-                        raw_msg,
-                        seen_hashes=seen_hashes,
-                    ):
-                        yield vm
-            except (websockets.exceptions.ConnectionClosed, OSError):
+                    if self._closed.is_set():
+                        return
+                    if self._ws is None:
+                        raise OSError("Websocket unavailable")
+                    async for raw_msg in self._ws:
+                        async for vm in self._handle_raw_message(
+                            raw_msg,
+                            seen_hashes=seen_hashes,
+                        ):
+                            yield vm
+                except (websockets.exceptions.ConnectionClosed, OSError):
+                    pass
+                except Exception:
+                    logger.exception("Unexpected Opinion websocket error")
+                    raise
+
+                # Both graceful EOF and transport errors require a paced reconnect.
+                if self._closed.is_set():
+                    return
                 self._connected = False
                 self._health.connected = False
                 self._health.reconnect_count += 1
                 await self._stop_heartbeat()
-                await asyncio.sleep(self._backoff.next_delay())
-            except Exception:
-                logger.exception("Unexpected Opinion websocket error")
-                raise
-
-            if len(seen_hashes) > 10000:
-                seen_hashes.clear()
+                await _wait_for_backoff(self._backoff, self._closed)
+                if len(seen_hashes) > 10000:
+                    seen_hashes.clear()
+        finally:
+            await self.close()
 
     def health(self) -> HealthMetrics:
         self._health.connected = self._connected

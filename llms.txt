@@ -63,3 +63,11 @@ predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl
 - Prefer `OrderBookState` for simple dashboards; do not claim execution-grade semantics.
 
 More context: `llms-full.txt`, `docs/`, `skills/predxt/SKILL.md`.
+
+## Websocket recovery
+
+All three websocket clients recover from graceful stream endings with
+backoff, updated connection health, and restored subscriptions. Opinion stops
+its heartbeat during reconnect. Explicit `close()` interrupts retry waits;
+cancelling or closing the message iterator releases the connection without
+reconnecting. Call `connect()` explicitly to restart a closed client.

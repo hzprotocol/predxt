@@ -2,6 +2,17 @@
 
 All notable changes to `predxt` are documented here.
 
+## 0.2.2 - 2026-09-11
+
+- fixed graceful websocket stream exhaustion for Polymarket, Kalshi, and
+  Opinion: mark health disconnected, count the reconnect, wait for backoff,
+  and restore the connection and subscription
+- stop Opinion's old heartbeat before reconnecting and restart it on success
+- interrupt retry waits on explicit close and release websocket/heartbeat
+  resources when message iteration is cancelled or closed; repeated close
+  remains safe, and an explicit `connect()` can start a new session
+- preserved public imports and the existing `VenueMessage.raw_data` contract
+
 ## 0.2.1 - 2026-08-26
 
 - fixed Polymarket, Kalshi, and Opinion connection manager shutdown so idle

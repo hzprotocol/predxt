@@ -14,7 +14,7 @@ from predxt.base import (
     VenueMessage,
     build_venue_message,
 )
-from predxt.utils.backoff import ExponentialBackoff
+from predxt.utils.backoff import ExponentialBackoff, _wait_for_backoff
 
 from .parser import parse_message
 
@@ -28,6 +28,7 @@ class PolymarketWsClient(BaseWsClient):
     def __init__(self, max_reconnect_attempts: int = MAX_RECONNECT_ATTEMPTS):
         self._ws: Any | None = None
         self._connected = False
+        self._closed = asyncio.Event()
         self._backoff = ExponentialBackoff(base_seconds=1, max_seconds=60)
         self._health = HealthMetrics(connected=False)
         self._channels: list[str] = []
@@ -41,12 +42,20 @@ class PolymarketWsClient(BaseWsClient):
 
         Sets _connect_time, clears last_error on success and records last_error on failure.
         """
+        self._closed.clear()
         if auth_params:
             logger.warning("Polymarket WS is public; auth_params ignored")
 
-        while self._reconnect_attempts < self._max_reconnect_attempts:
+        while (
+            not self._closed.is_set()
+            and self._reconnect_attempts < self._max_reconnect_attempts
+        ):
             try:
-                self._ws = await websockets.connect(self.WS_URL)
+                ws = await websockets.connect(self.WS_URL)
+                if self._closed.is_set():
+                    await ws.close()
+                    return
+                self._ws = ws
                 self._connected = True
                 # set connection timestamp used by health().
                 self._connect_time = time.time()
@@ -65,8 +74,10 @@ class PolymarketWsClient(BaseWsClient):
                 self._health.last_error = str(e)
                 self._health.last_error_timestamp_ms = time.time() * 1000
                 logger.warning(f"Connection failed, retry in {delay}s: {e}")
-                await asyncio.sleep(delay)
+                await _wait_for_backoff(self._backoff, self._closed, delay=delay)
 
+        if self._closed.is_set():
+            return
         raise ConnectionError(
             f"Failed to connect after {self._max_reconnect_attempts} attempts"
         )
@@ -118,11 +129,12 @@ class PolymarketWsClient(BaseWsClient):
             self._connected = False
 
     async def close(self) -> None:
-        if self._ws:
-            await self._ws.close()
-            self._connected = False
-            self._health.connected = False
-            logger.info("Closed Polymarket WS")
+        self._closed.set()
+        self._connected = False
+        self._health.connected = False
+        ws, self._ws = self._ws, None
+        if ws is not None:
+            await ws.close()
 
     async def messages(self) -> AsyncIterator[VenueMessage]:
         """Stream parsed Polymarket messages with deduplication and health updates.
@@ -131,60 +143,70 @@ class PolymarketWsClient(BaseWsClient):
         """
         seen_hashes: set[str] = set()
 
-        while True:
-            try:
-                if not self._connected:
-                    await self.connect()
-                    if self._channels:
-                        await self.subscribe(self._channels, self._params)
-
-                # websockets client returns an async iterator; support AsyncMock whose __aiter__ may be an async generator
-                # Prefer iterating directly over the websocket object when possible.
+        try:
+            while not self._closed.is_set():
                 try:
-                    # Prefer standard async iteration
-                    ws = self._ws
-                    if ws is None:
-                        continue
-                    async for raw_msg in ws:
-                        async for vm in self._handle_raw_message(
-                            raw_msg, seen_hashes=seen_hashes
-                        ):
-                            yield vm
-                except TypeError:
-                    # The websocket mock may expose __aiter__ as an async generator object
-                    # that isn't directly iterable; attempt to call it and iterate the result.
-                    try:
-                        ws = self._ws
-                        if ws is None:
-                            continue
-                        aiter_obj = ws.__aiter__()
-                        # If __aiter__() returned a coroutine that yields an async generator, await it
-                        if asyncio.iscoroutine(aiter_obj):
-                            aiter_obj = await aiter_obj
+                    if not self._connected:
+                        await self.connect()
+                        if self._closed.is_set():
+                            return
+                        if self._channels:
+                            await self.subscribe(self._channels, self._params)
 
-                        async for raw_msg in aiter_obj:
+                    # websockets client returns an async iterator; support AsyncMock whose __aiter__ may be an async generator
+                    # Prefer iterating directly over the websocket object when possible.
+                    try:
+                        # Prefer standard async iteration
+                        ws = self._ws
+                        if self._closed.is_set():
+                            return
+                        if ws is None:
+                            raise OSError("Websocket unavailable")
+                        async for raw_msg in ws:
                             async for vm in self._handle_raw_message(
                                 raw_msg, seen_hashes=seen_hashes
                             ):
                                 yield vm
-                    except Exception as e:
-                        logger.error(f"Failed iterating websocket mock: {e}")
-                    # end of mock iterator handling
+                    except TypeError:
+                        # The websocket mock may expose __aiter__ as an async generator object
+                        # that isn't directly iterable; attempt to call it and iterate the result.
+                        try:
+                            ws = self._ws
+                            if self._closed.is_set():
+                                return
+                            if ws is None:
+                                raise OSError("Websocket unavailable")
+                            aiter_obj = ws.__aiter__()
+                            # If __aiter__() returned a coroutine that yields an async generator, await it
+                            if asyncio.iscoroutine(aiter_obj):
+                                aiter_obj = await aiter_obj
 
-            except (websockets.exceptions.ConnectionClosed, OSError) as e:
+                            async for raw_msg in aiter_obj:
+                                async for vm in self._handle_raw_message(
+                                    raw_msg, seen_hashes=seen_hashes
+                                ):
+                                    yield vm
+                        except Exception as e:
+                            logger.error(f"Failed iterating websocket mock: {e}")
+                        # end of mock iterator handling
+
+                except (websockets.exceptions.ConnectionClosed, OSError) as e:
+                    logger.warning(f"Connection lost: {e}, reconnecting...")
+                except Exception as e:
+                    logger.error(f"Unexpected error: {e}")
+                    raise
+
+                # Both graceful EOF and transport errors require a paced reconnect.
+                if self._closed.is_set():
+                    return
                 self._connected = False
                 self._health.connected = False
                 self._health.reconnect_count += 1
-                logger.warning(f"Connection lost: {e}, reconnecting...")
-                await asyncio.sleep(self._backoff.next_delay())
-
-                # On reconnect, preserve seen_hashes for a short time but don't let it grow unbounded
+                await _wait_for_backoff(self._backoff, self._closed)
                 if len(seen_hashes) > 10000:
                     seen_hashes.clear()
-
-            except Exception as e:
-                logger.error(f"Unexpected error: {e}")
-                raise
+        finally:
+            await self.close()
 
     def health(self) -> HealthMetrics:
         self._health.connected = self._connected
