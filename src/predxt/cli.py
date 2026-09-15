@@ -12,6 +12,7 @@ from typing import Any, Iterable
 
 from predxt.base import VenueMessage, build_venue_message
 from predxt.events import typed_event_from_message
+from predxt.first_run import demo, explore, positive_int, positive_seconds
 from predxt.kalshi import KalshiWsClient
 from predxt.kalshi.parser import parse_message as parse_kalshi_message
 from predxt.opinion import OpinionWsClient
@@ -23,6 +24,13 @@ from predxt.polymarket.parser import parse_message as parse_polymarket_message
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    if args.command == "demo":
+        return demo(json_output=args.json)
+    if args.command == "explore":
+        try:
+            return asyncio.run(explore(args))
+        except KeyboardInterrupt:
+            return 130
     if args.command == "parse-fixture":
         return _parse_fixture(args)
     if args.command == "stream":
@@ -38,6 +46,35 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     subcommands = parser.add_subparsers(dest="command")
 
+    demo_parser = subcommands.add_parser(
+        "demo", help="Show a synthetic orderbook without files, keys, or network."
+    )
+    demo_parser.add_argument("--json", action="store_true")
+
+    explore_parser = subcommands.add_parser(
+        "explore", help="Find a market, choose an outcome, and read its orderbook."
+    )
+    explore_parser.add_argument("venue", choices=["polymarket"])
+    source = explore_parser.add_mutually_exclusive_group()
+    source.add_argument(
+        "--query", default="bitcoin", help="Search text (default: bitcoin)."
+    )
+    source.add_argument("--market-id", help="Gamma market ID; skips market selection.")
+    explore_parser.add_argument(
+        "--outcome-index",
+        type=positive_int,
+        help="1-based outcome number; skips selection.",
+    )
+    explore_parser.add_argument(
+        "--timeout",
+        type=positive_seconds,
+        default=10.0,
+        help="Maximum seconds for each API request (default: 10).",
+    )
+    explore_parser.add_argument(
+        "--json", action="store_true", help="Print the snapshot as JSON."
+    )
+
     fixture = subcommands.add_parser(
         "parse-fixture",
         help="Parse offline JSON fixture messages with a venue parser.",
@@ -48,13 +85,17 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["polymarket", "kalshi", "opinion"],
         required=True,
     )
-    fixture.add_argument("--jsonl", action="store_true", help="Emit one JSON object per line.")
+    fixture.add_argument(
+        "--jsonl", action="store_true", help="Emit one JSON object per line."
+    )
 
     stream = subcommands.add_parser("stream", help="Stream venue websocket messages.")
     stream_subcommands = stream.add_subparsers(dest="venue", required=True)
 
     polymarket = stream_subcommands.add_parser("polymarket", help="Stream Polymarket.")
-    polymarket.add_argument("--asset-id", dest="asset_ids", action="append", required=True)
+    polymarket.add_argument(
+        "--asset-id", dest="asset_ids", action="append", required=True
+    )
     _add_stream_common_args(polymarket)
 
     kalshi = stream_subcommands.add_parser("kalshi", help="Stream Kalshi.")
@@ -62,7 +103,9 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_stream_common_args(kalshi)
 
     opinion = stream_subcommands.add_parser("opinion", help="Stream Opinion.")
-    opinion.add_argument("--market-id", dest="market_ids", action="append", required=True)
+    opinion.add_argument(
+        "--market-id", dest="market_ids", action="append", required=True
+    )
     _add_stream_common_args(opinion)
 
     return parser
@@ -70,7 +113,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _add_stream_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--limit", type=int, default=10)
-    parser.add_argument("--jsonl", action="store_true", help="Emit one JSON object per line.")
+    parser.add_argument(
+        "--jsonl", action="store_true", help="Emit one JSON object per line."
+    )
 
 
 def _parse_fixture(args: argparse.Namespace) -> int:

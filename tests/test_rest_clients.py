@@ -12,17 +12,24 @@ from predxt.polymarket import PolymarketRestClient
 @pytest.mark.asyncio
 async def test_polymarket_rest_client_reads_markets_and_orderbook() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.host == "gamma.test" and request.url.path == "/markets":
+        if request.url.host == "gamma.test" and request.url.path == "/public-search":
+            assert request.url.params["q"] == "rain"
             return httpx.Response(
                 200,
-                json=[
-                    {
-                        "id": "1",
-                        "question": "Will it rain?",
-                        "clobTokenIds": '["yes-token", "no-token"]',
-                        "outcomes": '["Yes", "No"]',
-                    }
-                ],
+                json={
+                    "events": [
+                        {
+                            "markets": [
+                                {
+                                    "id": "1",
+                                    "question": "Will it rain?",
+                                    "clobTokenIds": '["yes-token", "no-token"]',
+                                    "outcomes": '["Yes", "No"]',
+                                }
+                            ]
+                        }
+                    ]
+                },
             )
         if request.url.host == "gamma.test" and request.url.path == "/markets/1":
             return httpx.Response(
@@ -67,7 +74,9 @@ async def test_polymarket_rest_client_reads_markets_and_orderbook() -> None:
 
 
 @pytest.mark.asyncio
-async def test_kalshi_rest_client_reads_markets_and_implied_yes_asks(monkeypatch) -> None:
+async def test_kalshi_rest_client_reads_markets_and_implied_yes_asks(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(
         "predxt.kalshi.auth._sign_rsa_pss",
         lambda **_kwargs: "signed-token",

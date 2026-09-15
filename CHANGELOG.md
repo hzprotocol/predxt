@@ -2,6 +2,17 @@
 
 All notable changes to `predxt` are documented here.
 
+## 0.3.0
+
+- add `predxt demo`, a built-in synthetic orderbook example that works without
+  network access or repository fixtures
+- add `predxt explore polymarket` to search, explicitly select a market/outcome,
+  read a bounded REST snapshot, and print the corresponding WebSocket command
+- fix Polymarket text search to use Gamma public-search and flatten/deduplicate
+  event markets; add keyword-only `active_only` filtering and reject nonpositive limits
+- document installation and first-run errors, and verify the offline demo from
+  an installed wheel outside the source checkout
+
 ## 0.2.2 - 2026-09-11
 
 - fixed graceful websocket stream exhaustion for Polymarket, Kalshi, and

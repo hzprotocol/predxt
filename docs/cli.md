@@ -1,6 +1,28 @@
 # CLI
 
+## First run
+
+The first-run commands require predxt 0.3.0 or later:
+
+```bash
+pip install "predxt>=0.3.0"
+```
+
+```bash
+predxt demo
+predxt demo --json
+predxt explore polymarket --query "bitcoin"
+```
+
+`demo` is synthetic and never connects to a venue. `explore` asks you to select
+a market and outcome, displays one REST snapshot, and prints a WebSocket command.
+Use `--market-id ID --outcome-index N --json` for noninteractive selection.
+`--timeout` sets the deadline for each API request (10 seconds by default).
+See [Your first orderbook](first-run.md).
+
 ## Parse offline fixtures
+
+This command uses a fixture from the repository checkout:
 
 ```bash
 predxt parse-fixture --venue polymarket --jsonl tests/fixtures/polymarket_order_books.json

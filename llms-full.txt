@@ -69,6 +69,28 @@ must not inspect or cancel private message task attributes.
 
 ### CLI
 
+First-run commands require predxt 0.3.0 or later:
+
+```bash
+predxt demo
+predxt explore polymarket --query "bitcoin"
+```
+
+The synthetic demo is built into the installed package and never accesses the
+network. Explore performs read-only Polymarket search, explicit market/outcome
+selection, and one REST orderbook request. It then prints a WebSocket command.
+`--market-id ID --outcome-index N --json` skips interactive selection and emits
+one JSON document including raw_data. Each request has a deadline controlled by
+`--timeout` (default 10 seconds). Errors exit nonzero; synthetic data is never
+presented as a live fallback. Read `docs/first-run.md` for the full workflow.
+
+Polymarket search now uses `/public-search` for non-empty queries, flattens nested
+event markets, deduplicates IDs, and supports keyword-only `active_only=True`.
+An empty query lists markets. `limit` must be positive; results come from the
+first search page, not an exhaustive catalog scan. Public models are unchanged.
+
+Existing commands (fixture paths require the repository checkout):
+
 ```bash
 predxt parse-fixture --venue polymarket --jsonl tests/fixtures/polymarket_order_books.json
 predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl

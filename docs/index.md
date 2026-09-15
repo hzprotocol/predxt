@@ -17,24 +17,23 @@ advice.
 ## Quick install
 
 ```bash
-pip install predxt
+pip install "predxt>=0.3.0"
 ```
 
-## Quick stream
+## First orderbook
+
+These commands require Python 3.12 or later and predxt 0.3.0 or later.
 
 ```bash
-predxt stream polymarket --asset-id 1234567890 --limit 5 --jsonl
+predxt demo
+predxt explore polymarket --query "bitcoin"
 ```
 
-## Quick REST snapshot
+`demo` shows a labelled synthetic orderbook with no network access. `explore`
+lets you select a real market and outcome, shows a REST snapshot, then prints
+a WebSocket command with the selected token ID already filled in.
 
-```python
-from predxt.polymarket import PolymarketRestClient
-
-client = PolymarketRestClient()
-book = await client.get_orderbook("CLOB_TOKEN_ID")
-await client.close()
-```
+Read the [first-run guide](first-run.md) for expected output and error handling.
 
 ## Core model
 
