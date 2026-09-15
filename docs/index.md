@@ -20,21 +20,21 @@ advice.
 pip install predxt
 ```
 
-## Quick stream
+## First orderbook (development version)
+
+These first-run commands are unreleased. Install the checkout with `pip install .`;
+PyPI 0.2.2 does not include them yet.
 
 ```bash
-predxt stream polymarket --asset-id 1234567890 --limit 5 --jsonl
+predxt demo
+predxt explore polymarket --query "bitcoin"
 ```
 
-## Quick REST snapshot
+`demo` shows a labelled synthetic orderbook with no network access. `explore`
+lets you select a real market and outcome, shows a REST snapshot, then prints
+a WebSocket command with the selected token ID already filled in.
 
-```python
-from predxt.polymarket import PolymarketRestClient
-
-client = PolymarketRestClient()
-book = await client.get_orderbook("CLOB_TOKEN_ID")
-await client.close()
-```
+Read the [first-run guide](first-run.md) for expected output and error handling.
 
 ## Core model
 

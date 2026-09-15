@@ -51,6 +51,8 @@ jobs:
       - name: Example help smoke
         run: |
           uv run predxt --help
+          uv run predxt demo --help
+          uv run predxt explore --help
           uv run predxt parse-fixture --help
           uv run predxt stream polymarket --help
           uv run python examples/polymarket_market_stream.py --help
@@ -65,6 +67,10 @@ jobs:
           /tmp/predxt-smoke/bin/python - <<'PY'
           from importlib.metadata import version
           from pathlib import Path
+          import json
+          import subprocess
+          import sys
+          import tempfile
           import tomllib
 
           import predxt
@@ -77,4 +83,13 @@ jobs:
 
           assert version("predxt") == project_version
           assert predxt.__version__ == project_version
+          with tempfile.TemporaryDirectory() as demo_dir:
+              result = subprocess.run(
+                  [sys.executable, "-m", "predxt.cli", "demo", "--json"],
+                  cwd=demo_dir, check=True, capture_output=True, text=True,
+              )
+          demo = json.loads(result.stdout)
+          assert demo["synthetic"] is True
+          assert demo["best_bid"] == 0.42
+          assert demo["best_ask"] == 0.44
           PY

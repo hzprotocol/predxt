@@ -30,13 +30,59 @@ class PolymarketRestClient(BaseRestClient):
         )
         self.gamma_url = gamma_url.rstrip("/")
 
-    async def search_markets(self, query: str, limit: int = 20) -> list[MarketSummary]:
-        payload = await self._get_json(
-            f"{self.gamma_url}/markets",
-            params={"search": query, "limit": limit},
-        )
-        rows = _extract_rows(payload, "markets")
-        return [_summary(row) for row in rows[:limit]]
+    async def search_markets(
+        self, query: str, limit: int = 20, *, active_only: bool = False
+    ) -> list[MarketSummary]:
+        """Return up to limit unique markets from the first Gamma search page.
+
+        Gamma searches events and nests matching markets under those events.
+        An empty query lists markets instead. Raw market rows remain available.
+        """
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        params: dict[str, Any]
+        if query.strip():
+            params = {
+                "q": query.strip(),
+                "limit_per_type": limit,
+                "search_profiles": False,
+                "search_tags": False,
+            }
+            if active_only:
+                params.update(events_status="active", keep_closed_markets=0)
+            payload = await self._get_json(
+                f"{self.gamma_url}/public-search", params=params
+            )
+            rows = [
+                row
+                for event in _extract_rows(payload, "events")
+                if isinstance(event, dict)
+                for row in _extract_rows(event, "markets")
+            ]
+        else:
+            params = {"limit": limit}
+            if active_only:
+                params.update(active=True, closed=False)
+            payload = await self._get_json(f"{self.gamma_url}/markets", params=params)
+            rows = _extract_rows(payload, "markets")
+
+        results: list[MarketSummary] = []
+        seen: set[str] = set()
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            if active_only and (
+                row.get("active") is not True or row.get("closed") is not False
+            ):
+                continue
+            market = _summary(row)
+            if not market.market_id or market.market_id in seen:
+                continue
+            results.append(market)
+            seen.add(market.market_id)
+            if len(results) >= limit:
+                break
+        return results
 
     async def get_market(self, market_id: str) -> MarketDetail:
         payload = await self._get_json(f"{self.gamma_url}/markets/{market_id}")
@@ -52,7 +98,9 @@ class PolymarketRestClient(BaseRestClient):
             venue="polymarket",
             event_type="rest_orderbook",
             timestamp_ms=current_timestamp_ms(),
-            market_id=as_text(payload.get("market")) if isinstance(payload, dict) else None,
+            market_id=as_text(payload.get("market"))
+            if isinstance(payload, dict)
+            else None,
             asset_id=(
                 as_text(payload.get("asset_id")) if isinstance(payload, dict) else None
             ),

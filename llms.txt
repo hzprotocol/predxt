@@ -48,6 +48,25 @@ REST clients expose `search_markets`, `get_market`, `get_orderbook`, and
 
 ## CLI
 
+Development version (not yet in PyPI 0.2.2):
+
+```bash
+predxt demo
+predxt explore polymarket --query "bitcoin"
+```
+
+`demo` uses built-in synthetic data and no network. `explore` selects an open
+market and outcome, reads one REST snapshot, and prints a WebSocket command.
+Use `--market-id ID --outcome-index N --json` without an interactive terminal.
+Each request has a deadline (`--timeout`, default 10 seconds). API failures never
+silently fall back to synthetic output. See `docs/first-run.md`.
+
+Polymarket `search_markets(query, limit=20, active_only=False)` uses Gamma
+public-search for non-empty queries and lists markets for empty queries. It
+returns up to limit unique market rows from the first page, retaining raw_data.
+
+Existing commands (the fixture path requires a checkout):
+
 ```bash
 predxt parse-fixture --venue polymarket --jsonl tests/fixtures/polymarket_order_books.json
 predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl

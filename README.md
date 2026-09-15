@@ -25,39 +25,43 @@ uv sync --group dev
 uv run pytest -q -s
 ```
 
-## 60-second Polymarket demo
+## Your first orderbook
 
-Polymarket market websockets are public. Use any valid Polymarket CLOB asset id:
+The commands in this section are unreleased; PyPI 0.2.2 does not include them.
+Install this checkout with `pip install .` to try them before the next release.
+
+Start with a built-in synthetic example. It works from any directory, with no
+credentials, files to download, or network connection:
 
 ```bash
-predxt stream polymarket --asset-id 1234567890 --limit 5 --jsonl
+predxt demo
 ```
 
-Or from Python:
-
-```python
-import asyncio
-
-from predxt.polymarket import PolymarketWsClient
-
-
-async def main() -> None:
-    client = PolymarketWsClient()
-    await client.connect()
-    await client.subscribe(
-        ["market"],
-        {"assets_ids": ["1234567890"], "initial_dump": True},
-    )
-
-    async for message in client.messages():
-        print(message.event_type, message.asset_id, message.raw_data)
-        break
-
-    await client.close()
-
-
-asyncio.run(main())
+```text
+SYNTHETIC DEMO — no network requests
+Market: Example market
+Outcome: Yes
+ BID PRICE         SIZE |  ASK PRICE         SIZE
+    0.4200          100 |     0.4400           80
+    0.4100           50 |     0.4500          120
+Spread: 0.0200
 ```
+
+Then find a real Polymarket market by name and choose its outcome:
+
+```bash
+predxt explore polymarket --query "bitcoin"
+```
+
+Choose a market number and an outcome number at the prompts. The CLI reads a
+REST snapshot, displays the top five levels on each side, and prints a ready-to-run
+WebSocket command for that outcome. Public Polymarket market data needs no API key.
+Each API request has a 10-second deadline; empty results and unavailable markets
+produce a clear message. The snapshot's fetch time is local receipt time.
+
+See the [first-run guide](docs/first-run.md) for scriptable selection, JSON output,
+and troubleshooting. Kalshi and Opinion remain available through the existing
+REST and WebSocket clients.
 
 ## Venue matrix
 
@@ -131,7 +135,13 @@ do not need to access private task attributes.
 
 ## CLI
 
-Offline parser demo:
+Built-in demo (development version):
+
+```bash
+predxt demo --json
+```
+
+Parse a fixture from a repository checkout:
 
 ```bash
 predxt parse-fixture --venue polymarket --jsonl tests/fixtures/polymarket_order_books.json
