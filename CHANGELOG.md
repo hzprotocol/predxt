@@ -2,7 +2,7 @@
 
 All notable changes to `predxt` are documented here.
 
-## Unreleased
+## 0.3.0
 
 - add `predxt demo`, a built-in synthetic orderbook example that works without
   network access or repository fixtures

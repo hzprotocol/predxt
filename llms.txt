@@ -22,7 +22,7 @@ market-data snapshots.
 ## Install
 
 ```bash
-pip install predxt
+pip install "predxt>=0.3.0"
 ```
 
 ## Core APIs
@@ -48,7 +48,7 @@ REST clients expose `search_markets`, `get_market`, `get_orderbook`, and
 
 ## CLI
 
-Development version (not yet in PyPI 0.2.2):
+First-run commands require predxt 0.3.0 or later:
 
 ```bash
 predxt demo

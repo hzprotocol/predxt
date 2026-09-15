@@ -1,8 +1,12 @@
 # CLI
 
-## First run (development version)
+## First run
 
-Install this checkout with `pip install .`; the new commands are not in PyPI 0.2.2.
+The first-run commands require predxt 0.3.0 or later:
+
+```bash
+pip install "predxt>=0.3.0"
+```
 
 ```bash
 predxt demo

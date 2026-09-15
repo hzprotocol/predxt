@@ -15,7 +15,7 @@ not a trading, execution, account, or financial-advice library.
 ## Install
 
 ```bash
-pip install predxt
+pip install "predxt>=0.3.0"
 ```
 
 For local development:
@@ -27,8 +27,7 @@ uv run pytest -q -s
 
 ## Your first orderbook
 
-The commands in this section are unreleased; PyPI 0.2.2 does not include them.
-Install this checkout with `pip install .` to try them before the next release.
+This walkthrough requires Python 3.12 or later and predxt 0.3.0 or later.
 
 Start with a built-in synthetic example. It works from any directory, with no
 credentials, files to download, or network connection:
@@ -135,7 +134,7 @@ do not need to access private task attributes.
 
 ## CLI
 
-Built-in demo (development version):
+Built-in demo:
 
 ```bash
 predxt demo --json
@@ -192,5 +191,5 @@ uv run twine check dist/*
 
 ## Release
 
-Releases use SemVer and tags like `v0.1.0`. See
+Releases use SemVer and tags in the `vX.Y.Z` format. See
 [`docs/releasing.md`](docs/releasing.md).

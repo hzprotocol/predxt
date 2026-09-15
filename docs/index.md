@@ -17,13 +17,12 @@ advice.
 ## Quick install
 
 ```bash
-pip install predxt
+pip install "predxt>=0.3.0"
 ```
 
-## First orderbook (development version)
+## First orderbook
 
-These first-run commands are unreleased. Install the checkout with `pip install .`;
-PyPI 0.2.2 does not include them yet.
+These commands require Python 3.12 or later and predxt 0.3.0 or later.
 
 ```bash
 predxt demo

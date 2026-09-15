@@ -69,7 +69,7 @@ must not inspect or cancel private message task attributes.
 
 ### CLI
 
-Development first-run commands (not yet in PyPI 0.2.2):
+First-run commands require predxt 0.3.0 or later:
 
 ```bash
 predxt demo

@@ -1,10 +1,9 @@
 # Your first orderbook
 
-The commands below are in development and are not part of PyPI 0.2.2 yet.
-With Python 3.12 or later, install a checkout containing this guide:
+The commands below require Python 3.12 or later and predxt 0.3.0 or later:
 
 ```bash
-pip install .
+pip install "predxt>=0.3.0"
 ```
 
 ## 1. See a result without credentials or network
