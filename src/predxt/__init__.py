@@ -19,6 +19,7 @@ from .models import (
 from .orderbook import OrderBookState
 from .rest import BaseRestClient
 from .utils.backoff import ExponentialBackoff
+from .utils.proxy import SocksDependencyError
 
 __all__ = [
     "__version__",
@@ -34,6 +35,7 @@ __all__ = [
     "OrderBookSnapshot",
     "OrderBookState",
     "PriceChangeEvent",
+    "SocksDependencyError",
     "TradeEvent",
     "VenueApiError",
     "VenueCredentialStatus",

@@ -18,6 +18,15 @@ not a trading, execution, account, or financial-advice library.
 pip install "predxt>=0.3.0"
 ```
 
+If WebSocket connections use a SOCKS proxy, install its optional support in
+the same Python environment, then restart the process:
+
+```bash
+python -m pip install "python-socks[asyncio]"
+```
+
+See [SOCKS proxy setup](docs/reconnects.md#socks-proxy-setup) for error handling.
+
 For local development:
 
 ```bash

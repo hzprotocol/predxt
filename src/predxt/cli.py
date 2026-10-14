@@ -19,6 +19,7 @@ from predxt.opinion import OpinionWsClient
 from predxt.opinion.parser import parse_message as parse_opinion_message
 from predxt.polymarket import PolymarketWsClient
 from predxt.polymarket.parser import parse_message as parse_polymarket_message
+from predxt.utils.proxy import SocksDependencyError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -34,7 +35,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "parse-fixture":
         return _parse_fixture(args)
     if args.command == "stream":
-        return asyncio.run(_stream(args))
+        try:
+            return asyncio.run(_stream(args))
+        except SocksDependencyError as exc:
+            print(f"predxt: {exc}", file=sys.stderr)
+            return 1
     parser.print_help()
     return 1
 
