@@ -15,6 +15,7 @@ from predxt.base import (
     build_venue_message,
 )
 from predxt.utils.backoff import ExponentialBackoff, _wait_for_backoff
+from predxt.utils.proxy import _raise_missing_socks_dependency
 
 from .parser import parse_message
 
@@ -68,6 +69,7 @@ class PolymarketWsClient(BaseWsClient):
                 logger.info("Connected to Polymarket WS")
                 return
             except Exception as e:
+                _raise_missing_socks_dependency(e, self._health)
                 self._reconnect_attempts += 1
                 delay = self._backoff.next_delay()
                 # record failure details for observability

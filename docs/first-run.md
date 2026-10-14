@@ -75,6 +75,9 @@ outcomes whose orderbooks you read. The CLI handles that distinction for you.
 - HTTP 403 or other API errors: check venue availability. The command exits with
   an error and suggests `predxt demo`; it never substitutes synthetic output for
   a live result automatically.
+- If the generated WebSocket command reports missing SOCKS proxy support,
+  install `python-socks[asyncio]` in the same Python environment and restart
+  the process. See [SOCKS proxy setup](reconnects.md#socks-proxy-setup).
 - Without a terminal, the search prints market IDs and explains how to pass
   `--market-id` and `--outcome-index`. It does not guess your selections.
 

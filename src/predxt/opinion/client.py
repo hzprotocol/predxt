@@ -17,6 +17,7 @@ from predxt.base import (
 )
 from predxt.opinion.parser import parse_message
 from predxt.utils.backoff import ExponentialBackoff, _wait_for_backoff
+from predxt.utils.proxy import _raise_missing_socks_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ class OpinionWsClient(BaseWsClient):
                 self._start_heartbeat()
                 return
             except Exception as exc:  # pragma: no cover - network failures in prod path
+                _raise_missing_socks_dependency(exc, self._health)
                 attempts += 1
                 self._health.last_error = str(exc)
                 self._health.last_error_timestamp_ms = time.time() * 1000

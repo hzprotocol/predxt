@@ -85,6 +85,12 @@ More context: `llms-full.txt`, `docs/`, `skills/predxt/SKILL.md`.
 
 ## Websocket recovery
 
+Missing optional WebSocket SOCKS support raises `predxt.SocksDependencyError`
+(an `ImportError`) immediately and records the message in connection health.
+Install `python-socks[asyncio]` in the same environment and restart the process.
+The `stream` CLI reports this on stderr with exit code 1 and no JSON output.
+Preserve existing proxy settings. See `docs/reconnects.md#socks-proxy-setup`.
+
 All three websocket clients recover from graceful stream endings with
 backoff, updated connection health, and restored subscriptions. Opinion stops
 its heartbeat during reconnect. Explicit `close()` interrupts retry waits;

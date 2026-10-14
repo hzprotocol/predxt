@@ -2,6 +2,13 @@
 
 All notable changes to `predxt` are documented here.
 
+## Unreleased
+
+- fail immediately with `SocksDependencyError` when WebSocket SOCKS proxy
+  support is missing, rather than retrying an unfixable connection setup
+- print an actionable installation command from `predxt stream` on stderr
+  with exit code 1, and document optional SOCKS setup and process restart
+
 ## 0.3.0
 
 - add `predxt demo`, a built-in synthetic orderbook example that works without

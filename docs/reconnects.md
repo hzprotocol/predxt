@@ -15,6 +15,34 @@ Connection retry behavior uses exponential backoff with jitter. Live systems
 should monitor `last_message_timestamp_ms`, reconnect counts, and process-level
 logs.
 
+## SOCKS proxy setup
+
+When `websockets` selects a SOCKS proxy from your operating system or environment,
+it needs the optional `python-socks` package. Install it in the Python environment
+that runs predxt:
+
+```bash
+python -m pip install "python-socks[asyncio]"
+```
+
+Restart the Python process after installation because `websockets` checks this
+dependency when its module is imported. predxt preserves the existing proxy
+selection; it does not disable or bypass your proxy.
+
+If the dependency is missing, Polymarket, Kalshi, and Opinion immediately raise
+`predxt.SocksDependencyError` (an `ImportError`) with the installation command.
+The error is recorded in `health().last_error` with a timestamp. There is no
+retry wait for this setup error, including when `messages()` opens a connection.
+`predxt stream` prints the message to stderr and exits with code 1 without a
+traceback or JSON output. Transient connection errors keep their existing
+backoff behavior.
+
+This optional package supports WebSocket SOCKS connections; it is not required
+for `predxt demo` or a direct WebSocket connection. REST clients use a separate
+HTTP transport.
+
+Source: [websockets proxy documentation](https://websockets.readthedocs.io/en/stable/topics/proxies.html).
+
 ## Graceful stream endings
 
 Polymarket, Kalshi, and Opinion recover when the remote websocket iterator

@@ -123,6 +123,14 @@ predxt stream polymarket --asset-id 1234567890 --limit 10 --jsonl
 
 ## Websocket recovery
 
+When `websockets` selects a SOCKS proxy but cannot import its optional support,
+all three clients raise `predxt.SocksDependencyError` (an `ImportError`) without
+retrying. Connection health records the actionable error and timestamp.
+Install `python-socks[asyncio]` in the same Python environment and restart the
+process. The `stream` CLI prints the instruction on stderr and exits with
+code 1, without a traceback or JSON output. Proxy selection is unchanged;
+see `docs/reconnects.md#socks-proxy-setup`.
+
 All three websocket clients recover from graceful stream endings with
 backoff, updated connection health, and restored subscriptions. Opinion stops
 its heartbeat during reconnect. Explicit `close()` interrupts retry waits;

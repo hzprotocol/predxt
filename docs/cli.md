@@ -37,3 +37,7 @@ OPINION_API_KEY=... predxt stream opinion --market-id 2764
 ```
 
 The CLI emits `VenueMessage` and typed event payloads. It never places orders.
+
+When SOCKS proxy support is missing, `stream` exits with code 1 and prints an
+installation command to stderr. No retry loop, traceback, or JSON output is
+produced for this setup error. See [SOCKS proxy setup](reconnects.md#socks-proxy-setup).
